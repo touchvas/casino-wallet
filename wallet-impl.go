@@ -510,6 +510,7 @@ func AdjustWalletProfile(tr trace.Tracer, ctx context.Context, client Client, ad
 		Amount:        adjustment.Amount,
 		SessionID:     adjustment.SessionID,
 		RoundID:       adjustment.RoundID,
+		FreeSpinWin:   adjustment.FreeSpinWin,
 	}
 
 	endpoint := fmt.Sprintf("%s/adjust", client.BaseURL)

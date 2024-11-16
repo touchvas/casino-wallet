@@ -82,6 +82,7 @@ type Adjustment struct {
 	Amount        float64 `json:"amount"`
 	SessionID     string  `json:"session_id"`
 	RoundID       string  `json:"round_id"`
+	FreeSpinWin   int64   `json:"free_spin_win"`
 }
 
 type Rollback struct {
@@ -133,6 +134,7 @@ type AdjustmentRequest struct {
 	Amount        float64 `json:"amount"`
 	SessionID     string  `json:"session_id"`
 	RoundID       string  `json:"round_id"`
+	FreeSpinWin   int64   `json:"free_spin_win"`
 }
 
 type ProfileRequest struct {
