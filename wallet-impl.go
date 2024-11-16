@@ -374,6 +374,7 @@ func CreditWalletProfile(tr trace.Tracer, ctx context.Context, client Client, cr
 		SpanID:             spanID,
 		TraceID:            traceID,
 		DebitTransactionID: credit.DebitTransactionID,
+		FreeSpinWin:        credit.FreeSpinWin,
 	}
 
 	endpoint := fmt.Sprintf("%s/credit", client.BaseURL)

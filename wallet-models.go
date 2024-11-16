@@ -71,6 +71,7 @@ type Credit struct {
 	Amount             float64 `json:"amount"`
 	SessionID          string  `json:"session_id"`
 	RoundID            string  `json:"round_id"`
+	FreeSpinWin        int64   `json:"free_spin_win"`
 }
 
 type Adjustment struct {
@@ -119,6 +120,7 @@ type CreditRequest struct {
 	SpanID             string  `json:"span_id"`
 	TraceID            string  `json:"trace_id"`
 	DebitTransactionID string  `json:"debit_transaction_id"`
+	FreeSpinWin        int64   `json:"free_spin_win"`
 }
 
 type AdjustmentRequest struct {
