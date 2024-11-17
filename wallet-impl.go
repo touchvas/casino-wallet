@@ -30,10 +30,10 @@ var (
 func GenerateToken(redisConn *redis.Client, profileID string) string {
 
 	token := uuid.New().String()
-	SetRedisKeyWithExpiry(redisConn, token, profileID, 60*60)
+	SetRedisKeyWithExpiry(redisConn, token, profileID, 60*60*5)
 
 	sessionKeys := fmt.Sprintf("session:%s", profileID)
-	SetRedisKeyWithExpiry(redisConn, sessionKeys, token, 60*60)
+	SetRedisKeyWithExpiry(redisConn, sessionKeys, token, 60*60*5)
 
 	return token
 }
