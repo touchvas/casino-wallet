@@ -100,7 +100,7 @@ func CreateClient(tr trace.Tracer, ctx context.Context, db *sql.DB, client Clien
 
 		logrus.WithContext(ctx).
 			WithFields(logrus.Fields{
-				"description": "error creating client",
+				"description": "error creating  new client",
 				"data":        inserts,
 			}).
 			Error(err.Error())
