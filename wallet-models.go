@@ -5,6 +5,7 @@ type Client struct {
 	BaseURL              string
 	AuthenticationString string
 	AuthenticationHeader string
+	APIVersion           int64
 }
 
 type TransactionResponse struct {
@@ -135,6 +136,8 @@ type AdjustmentRequest struct {
 	SessionID     string `json:"session_id"`
 	RoundID       string `json:"round_id"`
 	FreeSpinWin   int64  `json:"free_spin_win"`
+	SpanID        string `json:"span_id"`
+	TraceID       string `json:"trace_id"`
 }
 
 type ProfileRequest struct {
@@ -152,6 +155,8 @@ type RollbackRequest struct {
 	SessionID          string `json:"session_id"`
 	RoundID            string `json:"round_id"`
 	DebitTransactionID string `json:"debit_transaction_id"`
+	SpanID             string `json:"span_id"`
+	TraceID            string `json:"trace_id"`
 }
 
 type Settlement struct {
@@ -169,4 +174,6 @@ type SettlementRequest struct {
 	SessionID          string `json:"session_id"`
 	RoundID            string `json:"round_id"`
 	DebitTransactionID string `json:"debit_transaction_id"`
+	SpanID             string `json:"span_id"`
+	TraceID            string `json:"trace_id"`
 }

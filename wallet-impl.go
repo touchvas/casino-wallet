@@ -4,12 +4,8 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/go-redis/redis"
-	"github.com/google/uuid"
-	goutils "github.com/mudphilo/go-utils"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/trace"
@@ -27,151 +23,7 @@ var (
 	netClient *http.Client
 )
 
-func GenerateToken(redisConn *redis.Client, profileID string) string {
-
-	token := uuid.New().String()
-	SetRedisKeyWithExpiry(redisConn, token, profileID, 60*60*5)
-
-	sessionKeys := fmt.Sprintf("session:%s", profileID)
-	SetRedisKeyWithExpiry(redisConn, sessionKeys, token, 60*60*5)
-
-	return token
-}
-
-func GetSessionID(redisConn *redis.Client, profileID string) string {
-
-	sessionKeys := fmt.Sprintf("session:%s", profileID)
-	profile, _ := GetRedisKey(redisConn, sessionKeys)
-	return profile
-}
-
-func GetProfileIDFromtoken(redisConn *redis.Client, token string) string {
-
-	profile, _ := GetRedisKey(redisConn, token)
-	return profile
-}
-
-func GetUserTokenAndClient(token string) (tokenString string, clientID int64) {
-
-	prefix := os.Getenv("ACCOUNT_PREFIX")
-	UserIDLength := len(prefix)
-
-	if len(token) < UserIDLength {
-
-		return "", 0
-	}
-
-	client, _ := strconv.ParseInt(token[0:UserIDLength], 10, 64)
-	token = token[UserIDLength:]
-	return token, client
-}
-
-func GetUserAndClient(accountId string) (userID string, clientID int64) {
-
-	prefix := os.Getenv("ACCOUNT_PREFIX")
-	UserIDLength := len(prefix)
-	if len(accountId) < UserIDLength {
-
-		return "", 0
-	}
-
-	client, _ := strconv.ParseInt(accountId[0:UserIDLength], 10, 64)
-	user := accountId[UserIDLength:]
-
-	return user, client
-}
-
-func CreateClient(tr trace.Tracer, ctx context.Context, db *sql.DB, client Client) error {
-
-	ctx, span := tr.Start(ctx, "CreateClient")
-	defer span.End()
-
-	dbUtils := goutils.Db{DB: db, Context: ctx}
-
-	inserts := map[string]interface{}{
-		"account":               client.ID,
-		"authentication_header": client.AuthenticationHeader,
-		"authentication_string": client.AuthenticationString,
-		"base_url":              client.BaseURL,
-	}
-
-	_, err := dbUtils.UpsertWithContext("clients", inserts, []string{"account", "authentication_header", "authentication_string", "base_url"})
-	if err != nil {
-
-		logrus.WithContext(ctx).
-			WithFields(logrus.Fields{
-				"description": "error creating  new client",
-				"data":        inserts,
-			}).
-			Error(err.Error())
-
-		return err
-
-	}
-
-	return err
-
-}
-
-func DeleteClient(tr trace.Tracer, ctx context.Context, db *sql.DB, id int64) error {
-
-	ctx, span := tr.Start(ctx, "DeleteClient")
-	defer span.End()
-
-	dbUtils := goutils.Db{DB: db, Context: ctx}
-
-	_, err := dbUtils.DeleteWithContext("clients", map[string]interface{}{"account": id})
-	if err != nil {
-
-		logrus.WithContext(ctx).
-			WithFields(logrus.Fields{
-				"description": "error deleting client",
-				"data":        id,
-			}).
-			Error(err.Error())
-
-		return err
-
-	}
-
-	return err
-
-}
-
-func GetClient(tr trace.Tracer, ctx context.Context, db *sql.DB, clientID int64) Client {
-
-	ctx, span := tr.Start(ctx, "GetClient")
-	defer span.End()
-
-	query := "SELECT base_url, authentication_header,authentication_string FROM clients WHERE account = ? "
-	dbUtils := goutils.Db{DB: db, Context: ctx}
-	dbUtils.SetQuery(query)
-	dbUtils.SetParams(clientID)
-
-	var base_url, authenticationHeader, authenticationString sql.NullString
-	err := dbUtils.FetchOneWithContext().Scan(&base_url, &authenticationHeader, &authenticationString)
-	if err != nil {
-
-		logrus.WithContext(ctx).
-			WithFields(logrus.Fields{
-				"description": "error retrieving client details",
-			}).
-			Error(err.Error())
-
-		return Client{}
-
-	}
-
-	return Client{
-		ID:                   clientID,
-		BaseURL:              base_url.String,
-		AuthenticationHeader: authenticationHeader.String,
-		AuthenticationString: authenticationString.String,
-	}
-
-}
-
-func GetWalletProfile(tr trace.Tracer, ctx context.Context, client Client, profileID string) (*WalletProfile, error) {
+func GetWalletProfile(tr trace.Tracer, ctx context.Context, client Client, profileID string, decimalMultiplier DecimalMultiplier) (*WalletProfile, error) {
 
 	ctx, span := tr.Start(ctx, "GetWalletProfile")
 	defer span.End()
@@ -192,6 +44,12 @@ func GetWalletProfile(tr trace.Tracer, ctx context.Context, client Client, profi
 	}
 
 	endpoint := fmt.Sprintf("%s/profile", client.BaseURL)
+
+	if client.APIVersion > 0 {
+
+		endpoint = fmt.Sprintf("%s/v%d/profile", client.BaseURL, client.APIVersion)
+
+	}
 
 	status, response := HTTPPost(ctx, endpoint, headers, profileRequest)
 
@@ -241,11 +99,23 @@ func GetWalletProfile(tr trace.Tracer, ctx context.Context, client Client, profi
 
 	prof.ID = id
 
+	if client.APIVersion > 0 {
+
+		// 3400 0000
+		// 100 (3400 00)
+		// balance correction
+		if decimalMultiplier.In64() != DecimalMultiplierTenOfThousands {
+
+			prof.Balance = int64(prof.Balance * decimalMultiplier.In64() / DecimalMultiplierTenOfThousands)
+
+		}
+	}
+
 	return prof, nil
 
 }
 
-func DebitWalletProfile(tr trace.Tracer, ctx context.Context, client Client, debit Debit) (*DebitTransactionResponse, error) {
+func DebitWalletProfile(tr trace.Tracer, ctx context.Context, client Client, debit Debit, decimalMultiplier DecimalMultiplier) (*DebitTransactionResponse, error) {
 
 	ctx, span := tr.Start(ctx, "DebitWalletProfile")
 	defer span.End()
@@ -277,6 +147,17 @@ func DebitWalletProfile(tr trace.Tracer, ctx context.Context, client Client, deb
 	}
 
 	endpoint := fmt.Sprintf("%s/debit", client.BaseURL)
+
+	if client.APIVersion > 0 {
+
+		endpoint = fmt.Sprintf("%s/v%d/debit", client.BaseURL, client.APIVersion)
+
+		if decimalMultiplier.In64() != DecimalMultiplierTenOfThousands {
+
+			debitRequest.Amount = int64(debitRequest.Amount * DecimalMultiplierTenOfThousands / decimalMultiplier.In64())
+
+		}
+	}
 
 	status, response := HTTPPost(ctx, endpoint, headers, debitRequest)
 	if status > 299 || status < 200 {
@@ -339,12 +220,21 @@ func DebitWalletProfile(tr trace.Tracer, ctx context.Context, client Client, deb
 	}
 
 	prof.Status = 1
+	if client.APIVersion > 0 {
+
+		// balance correction
+		if decimalMultiplier.In64() != DecimalMultiplierTenOfThousands {
+
+			prof.Balance = int64(prof.Balance * decimalMultiplier.In64() / DecimalMultiplierTenOfThousands)
+
+		}
+	}
 
 	return prof, nil
 
 }
 
-func CreditWalletProfile(tr trace.Tracer, ctx context.Context, client Client, credit Credit) (*CreditTransactionResponse, error) {
+func CreditWalletProfile(tr trace.Tracer, ctx context.Context, client Client, credit Credit, decimalMultiplier DecimalMultiplier) (*CreditTransactionResponse, error) {
 
 	ctx, span := tr.Start(ctx, "CreditWalletProfile")
 	defer span.End()
@@ -378,6 +268,17 @@ func CreditWalletProfile(tr trace.Tracer, ctx context.Context, client Client, cr
 	}
 
 	endpoint := fmt.Sprintf("%s/credit", client.BaseURL)
+
+	if client.APIVersion > 0 {
+
+		endpoint = fmt.Sprintf("%s/v%d/credit", client.BaseURL, client.APIVersion)
+
+		if decimalMultiplier.In64() != DecimalMultiplierTenOfThousands {
+
+			creditRequest.Amount = int64(creditRequest.Amount * DecimalMultiplierTenOfThousands / decimalMultiplier.In64())
+
+		}
+	}
 
 	status, response := HTTPPost(ctx, endpoint, headers, creditRequest)
 
@@ -432,6 +333,17 @@ func CreditWalletProfile(tr trace.Tracer, ctx context.Context, client Client, cr
 	}
 
 	prof.Status = 1
+
+	if client.APIVersion > 0 {
+
+		// balance correction
+		if decimalMultiplier.In64() != DecimalMultiplierTenOfThousands {
+
+			prof.Balance = int64(prof.Balance * decimalMultiplier.In64() / DecimalMultiplierTenOfThousands)
+
+		}
+	}
+
 	return prof, nil
 
 }
@@ -463,6 +375,12 @@ func BetSettlement(tr trace.Tracer, ctx context.Context, client Client, settleme
 
 	endpoint := fmt.Sprintf("%s/settlement", client.BaseURL)
 
+	if client.APIVersion > 0 {
+
+		endpoint = fmt.Sprintf("%s/v%d/settlement", client.BaseURL, client.APIVersion)
+
+	}
+
 	status, response := HTTPPost(ctx, endpoint, headers, settlementRequest)
 	if status > 299 || status < 200 {
 
@@ -483,7 +401,7 @@ func BetSettlement(tr trace.Tracer, ctx context.Context, client Client, settleme
 
 }
 
-func AdjustWalletProfile(tr trace.Tracer, ctx context.Context, client Client, adjustment Adjustment) (*AdjustmentTransactionResponse, error) {
+func AdjustWalletProfile(tr trace.Tracer, ctx context.Context, client Client, adjustment Adjustment, decimalMultiplier DecimalMultiplier) (*AdjustmentTransactionResponse, error) {
 
 	ctx, span := tr.Start(ctx, "AdjustWalletProfile")
 	defer span.End()
@@ -514,6 +432,17 @@ func AdjustWalletProfile(tr trace.Tracer, ctx context.Context, client Client, ad
 	}
 
 	endpoint := fmt.Sprintf("%s/adjust", client.BaseURL)
+
+	if client.APIVersion > 0 {
+
+		endpoint = fmt.Sprintf("%s/v%d/adjust", client.BaseURL, client.APIVersion)
+
+		if decimalMultiplier.In64() != DecimalMultiplierTenOfThousands {
+
+			adjustmentRequest.Amount = int64(adjustmentRequest.Amount * DecimalMultiplierTenOfThousands / decimalMultiplier.In64())
+
+		}
+	}
 
 	status, response := HTTPPost(ctx, endpoint, headers, adjustmentRequest)
 
@@ -568,11 +497,22 @@ func AdjustWalletProfile(tr trace.Tracer, ctx context.Context, client Client, ad
 	}
 
 	prof.Status = 1
+
+	if client.APIVersion > 0 {
+
+		// balance correction
+		if decimalMultiplier.In64() != DecimalMultiplierTenOfThousands {
+
+			prof.Balance = int64(prof.Balance * decimalMultiplier.In64() / DecimalMultiplierTenOfThousands)
+
+		}
+	}
+
 	return prof, nil
 
 }
 
-func BetRollback(tr trace.Tracer, ctx context.Context, client Client, rollback Rollback) (*RollbackTransactionResponse, error) {
+func BetRollback(tr trace.Tracer, ctx context.Context, client Client, rollback Rollback, decimalMultiplier DecimalMultiplier) (*RollbackTransactionResponse, error) {
 
 	ctx, span := tr.Start(ctx, "BetRollback")
 	defer span.End()
@@ -601,6 +541,17 @@ func BetRollback(tr trace.Tracer, ctx context.Context, client Client, rollback R
 	}
 
 	endpoint := fmt.Sprintf("%s/rollback", client.BaseURL)
+
+	if client.APIVersion > 0 {
+
+		endpoint = fmt.Sprintf("%s/v%d/rollback", client.BaseURL, client.APIVersion)
+
+		if decimalMultiplier.In64() != DecimalMultiplierTenOfThousands {
+
+			rollbackRequest.Amount = int64(rollbackRequest.Amount * DecimalMultiplierTenOfThousands / decimalMultiplier.In64())
+
+		}
+	}
 
 	status, response := HTTPPost(ctx, endpoint, headers, rollbackRequest)
 
@@ -655,6 +606,17 @@ func BetRollback(tr trace.Tracer, ctx context.Context, client Client, rollback R
 	}
 
 	prof.Status = 1
+
+	if client.APIVersion > 0 {
+
+		// balance correction
+		if decimalMultiplier.In64() != DecimalMultiplierTenOfThousands {
+
+			prof.Balance = int64(prof.Balance * decimalMultiplier.In64() / DecimalMultiplierTenOfThousands)
+
+		}
+	}
+
 	return prof, nil
 
 }
