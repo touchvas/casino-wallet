@@ -23,6 +23,8 @@ type DebitTransactionResponse struct {
 	BonusDeducted int64  `json:"bonus_deducted"`
 	Status        int64  `json:"status"`
 	Description   string `json:"description"`
+	Currency      string `json:"currency"`
+	Language      string `json:"language"`
 }
 
 type CreditTransactionResponse struct {
@@ -30,6 +32,8 @@ type CreditTransactionResponse struct {
 	Balance      int64  `json:"balance"`
 	Status       int64  `json:"status"`
 	Description  string `json:"description"`
+	Currency     string `json:"currency"`
+	Language     string `json:"language"`
 }
 
 type RollbackTransactionResponse struct {
@@ -37,6 +41,8 @@ type RollbackTransactionResponse struct {
 	Balance      int64  `json:"balance"`
 	Status       int64  `json:"status"`
 	Description  string `json:"description"`
+	Currency     string `json:"currency"`
+	Language     string `json:"language"`
 }
 
 type AdjustmentTransactionResponse struct {
@@ -44,6 +50,8 @@ type AdjustmentTransactionResponse struct {
 	Balance      int64  `json:"balance"`
 	Status       int64  `json:"status"`
 	Description  string `json:"description"`
+	Currency     string `json:"currency"`
+	Language     string `json:"language"`
 }
 
 type WalletProfile struct {
@@ -51,6 +59,8 @@ type WalletProfile struct {
 	ID          string `json:"player_id"`
 	Balance     int64  `json:"balance"`
 	Bonus       int64  `json:"bonus"`
+	Currency    string `json:"currency"`
+	Language    string `json:"language"`
 }
 
 type Debit struct {
