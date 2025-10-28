@@ -6,16 +6,17 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel/trace"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"os"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -673,7 +674,7 @@ func HTTPPost(ctx context.Context, url string, headers map[string]string, payloa
 	}
 
 	st := resp.StatusCode
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 
 		logrus.WithContext(ctx).
