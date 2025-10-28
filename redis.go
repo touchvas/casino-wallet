@@ -1,13 +1,16 @@
 package wallet
 
 import (
+	"context"
 	"fmt"
-	"github.com/go-redis/redis"
+
 	"log"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 )
 
-func GetRedisKey(conn *redis.Client, key string) (string, error) {
+func GetRedisKey(conn *redis.Client, key string, ctx context.Context) (string, error) {
 
 	//BOOKING:CODE
 
@@ -15,7 +18,7 @@ func GetRedisKey(conn *redis.Client, key string) (string, error) {
 	//if strings.HasPrefix(key,"PROFILE:") || strings.HasPrefix(key,"BOOKING:") || strings.HasPrefix(key,"AUTHORIZATION:")  {
 
 	var data string
-	data, err := conn.Get(key).Result()
+	data, err := conn.Get(ctx, key).Result()
 	if err != nil {
 
 		return data, fmt.Errorf("error getting key %s: %v", key, err)
@@ -28,9 +31,9 @@ func GetRedisKey(conn *redis.Client, key string) (string, error) {
 
 }
 
-func SetRedisKey(conn *redis.Client, key string, value string) error {
+func SetRedisKey(conn *redis.Client, key string, value string, ctx context.Context) error {
 
-	_, err := conn.Set(key, value, time.Second*time.Duration(0)).Result()
+	_, err := conn.Set(ctx, key, value, time.Second*time.Duration(0)).Result()
 	if err != nil {
 
 		v := string(value)
@@ -45,9 +48,9 @@ func SetRedisKey(conn *redis.Client, key string, value string) error {
 	return err
 }
 
-func SetRedisKeyWithExpiry(conn *redis.Client, key string, value string, seconds int) error {
+func SetRedisKeyWithExpiry(conn *redis.Client, key string, value string, seconds int, ctx context.Context) error {
 
-	_, err := conn.Set(key, value, time.Second*time.Duration(seconds)).Result()
+	_, err := conn.Set(ctx, key, value, time.Second*time.Duration(seconds)).Result()
 	if err != nil {
 
 		v := string(value)
@@ -64,10 +67,10 @@ func SetRedisKeyWithExpiry(conn *redis.Client, key string, value string, seconds
 	return err
 }
 
-func IncRedisKey(conn *redis.Client, key string) (int64, error) {
+func IncRedisKey(conn *redis.Client, key string, ctx context.Context) (int64, error) {
 
 	var data int64
-	data, err := conn.Incr(key).Result()
+	data, err := conn.Incr(ctx, key).Result()
 
 	if err != nil {
 
