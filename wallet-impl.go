@@ -24,7 +24,7 @@ var (
 	netClient *http.Client
 )
 
-func GetWalletProfile(tr trace.Tracer, ctx context.Context, client Client, profileID string, decimalMultiplier DecimalMultiplier) (*WalletProfile, error) {
+func GetWalletProfile(tr trace.Tracer, ctx context.Context, client Client, profileID string) (*WalletProfile, error) {
 
 	ctx, span := tr.Start(ctx, "GetWalletProfile")
 	defer span.End()
@@ -94,23 +94,11 @@ func GetWalletProfile(tr trace.Tracer, ctx context.Context, client Client, profi
 
 	prof.ID = id
 
-	if client.APIVersion > 0 {
-
-		// 3400 0000
-		// 100 (3400 00)
-		// balance correction
-		if decimalMultiplier.In64() != DecimalMultiplierTenOfThousands {
-
-			prof.Balance = int64(prof.Balance * decimalMultiplier.In64() / DecimalMultiplierTenOfThousands)
-
-		}
-	}
-
 	return prof, nil
 
 }
 
-func DebitWalletProfile(tr trace.Tracer, ctx context.Context, client Client, debit Debit, decimalMultiplier DecimalMultiplier) (*DebitTransactionResponse, error) {
+func DebitWalletProfile(tr trace.Tracer, ctx context.Context, client Client, debit Debit) (*DebitTransactionResponse, error) {
 
 	ctx, span := tr.Start(ctx, "DebitWalletProfile")
 	defer span.End()
@@ -142,15 +130,6 @@ func DebitWalletProfile(tr trace.Tracer, ctx context.Context, client Client, deb
 	}
 
 	endpoint := fmt.Sprintf("%s/debit", client.BaseURL)
-
-	if client.APIVersion > 0 {
-
-		if decimalMultiplier.In64() != DecimalMultiplierTenOfThousands {
-
-			debitRequest.Amount = int64(debitRequest.Amount * DecimalMultiplierTenOfThousands / decimalMultiplier.In64())
-
-		}
-	}
 
 	status, response := HTTPPost(ctx, endpoint, headers, debitRequest)
 	if status > 299 || status < 200 {
@@ -213,21 +192,12 @@ func DebitWalletProfile(tr trace.Tracer, ctx context.Context, client Client, deb
 	}
 
 	prof.Status = 1
-	if client.APIVersion > 0 {
-
-		// balance correction
-		if decimalMultiplier.In64() != DecimalMultiplierTenOfThousands {
-
-			prof.Balance = int64(prof.Balance * decimalMultiplier.In64() / DecimalMultiplierTenOfThousands)
-
-		}
-	}
 
 	return prof, nil
 
 }
 
-func CreditWalletProfile(tr trace.Tracer, ctx context.Context, client Client, credit Credit, decimalMultiplier DecimalMultiplier) (*CreditTransactionResponse, error) {
+func CreditWalletProfile(tr trace.Tracer, ctx context.Context, client Client, credit Credit) (*CreditTransactionResponse, error) {
 
 	ctx, span := tr.Start(ctx, "CreditWalletProfile")
 	defer span.End()
@@ -261,15 +231,6 @@ func CreditWalletProfile(tr trace.Tracer, ctx context.Context, client Client, cr
 	}
 
 	endpoint := fmt.Sprintf("%s/credit", client.BaseURL)
-
-	if client.APIVersion > 0 {
-
-		if decimalMultiplier.In64() != DecimalMultiplierTenOfThousands {
-
-			creditRequest.Amount = int64(creditRequest.Amount * DecimalMultiplierTenOfThousands / decimalMultiplier.In64())
-
-		}
-	}
 
 	status, response := HTTPPost(ctx, endpoint, headers, creditRequest)
 
@@ -325,16 +286,6 @@ func CreditWalletProfile(tr trace.Tracer, ctx context.Context, client Client, cr
 
 	prof.Status = 1
 
-	if client.APIVersion > 0 {
-
-		// balance correction
-		if decimalMultiplier.In64() != DecimalMultiplierTenOfThousands {
-
-			prof.Balance = int64(prof.Balance * decimalMultiplier.In64() / DecimalMultiplierTenOfThousands)
-
-		}
-	}
-
 	return prof, nil
 
 }
@@ -386,7 +337,7 @@ func BetSettlement(tr trace.Tracer, ctx context.Context, client Client, settleme
 
 }
 
-func AdjustWalletProfile(tr trace.Tracer, ctx context.Context, client Client, adjustment Adjustment, decimalMultiplier DecimalMultiplier) (*AdjustmentTransactionResponse, error) {
+func AdjustWalletProfile(tr trace.Tracer, ctx context.Context, client Client, adjustment Adjustment) (*AdjustmentTransactionResponse, error) {
 
 	ctx, span := tr.Start(ctx, "AdjustWalletProfile")
 	defer span.End()
@@ -417,15 +368,6 @@ func AdjustWalletProfile(tr trace.Tracer, ctx context.Context, client Client, ad
 	}
 
 	endpoint := fmt.Sprintf("%s/adjust", client.BaseURL)
-
-	if client.APIVersion > 0 {
-
-		if decimalMultiplier.In64() != DecimalMultiplierTenOfThousands {
-
-			adjustmentRequest.Amount = int64(adjustmentRequest.Amount * DecimalMultiplierTenOfThousands / decimalMultiplier.In64())
-
-		}
-	}
 
 	status, response := HTTPPost(ctx, endpoint, headers, adjustmentRequest)
 
@@ -481,21 +423,11 @@ func AdjustWalletProfile(tr trace.Tracer, ctx context.Context, client Client, ad
 
 	prof.Status = 1
 
-	if client.APIVersion > 0 {
-
-		// balance correction
-		if decimalMultiplier.In64() != DecimalMultiplierTenOfThousands {
-
-			prof.Balance = int64(prof.Balance * decimalMultiplier.In64() / DecimalMultiplierTenOfThousands)
-
-		}
-	}
-
 	return prof, nil
 
 }
 
-func BetRollback(tr trace.Tracer, ctx context.Context, client Client, rollback Rollback, decimalMultiplier DecimalMultiplier) (*RollbackTransactionResponse, error) {
+func BetRollback(tr trace.Tracer, ctx context.Context, client Client, rollback Rollback) (*RollbackTransactionResponse, error) {
 
 	ctx, span := tr.Start(ctx, "BetRollback")
 	defer span.End()
@@ -524,15 +456,6 @@ func BetRollback(tr trace.Tracer, ctx context.Context, client Client, rollback R
 	}
 
 	endpoint := fmt.Sprintf("%s/rollback", client.BaseURL)
-
-	if client.APIVersion > 0 {
-
-		if decimalMultiplier.In64() != DecimalMultiplierTenOfThousands {
-
-			rollbackRequest.Amount = int64(rollbackRequest.Amount * DecimalMultiplierTenOfThousands / decimalMultiplier.In64())
-
-		}
-	}
 
 	status, response := HTTPPost(ctx, endpoint, headers, rollbackRequest)
 
@@ -587,16 +510,6 @@ func BetRollback(tr trace.Tracer, ctx context.Context, client Client, rollback R
 	}
 
 	prof.Status = 1
-
-	if client.APIVersion > 0 {
-
-		// balance correction
-		if decimalMultiplier.In64() != DecimalMultiplierTenOfThousands {
-
-			prof.Balance = int64(prof.Balance * decimalMultiplier.In64() / DecimalMultiplierTenOfThousands)
-
-		}
-	}
 
 	return prof, nil
 
