@@ -24,6 +24,7 @@ type Paginator struct {
 	Joins []string
 	GroupBy []string
 	OrWhere [] string
+	Having [] string
 	Params []interface{}
 	Results func(row *sql.Rows) [] interface{}
 }

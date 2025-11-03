@@ -46,12 +46,6 @@ func GetWalletProfile(tr trace.Tracer, ctx context.Context, client Client, profi
 
 	endpoint := fmt.Sprintf("%s/profile", client.BaseURL)
 
-	if client.APIVersion > 0 {
-
-		endpoint = fmt.Sprintf("%s/v%d/profile", client.BaseURL, client.APIVersion)
-
-	}
-
 	status, response := HTTPPost(ctx, endpoint, headers, profileRequest)
 
 	if status > 299 || status < 200 {
@@ -150,8 +144,6 @@ func DebitWalletProfile(tr trace.Tracer, ctx context.Context, client Client, deb
 	endpoint := fmt.Sprintf("%s/debit", client.BaseURL)
 
 	if client.APIVersion > 0 {
-
-		endpoint = fmt.Sprintf("%s/v%d/debit", client.BaseURL, client.APIVersion)
 
 		if decimalMultiplier.In64() != DecimalMultiplierTenOfThousands {
 
@@ -272,8 +264,6 @@ func CreditWalletProfile(tr trace.Tracer, ctx context.Context, client Client, cr
 
 	if client.APIVersion > 0 {
 
-		endpoint = fmt.Sprintf("%s/v%d/credit", client.BaseURL, client.APIVersion)
-
 		if decimalMultiplier.In64() != DecimalMultiplierTenOfThousands {
 
 			creditRequest.Amount = int64(creditRequest.Amount * DecimalMultiplierTenOfThousands / decimalMultiplier.In64())
@@ -376,12 +366,6 @@ func BetSettlement(tr trace.Tracer, ctx context.Context, client Client, settleme
 
 	endpoint := fmt.Sprintf("%s/settlement", client.BaseURL)
 
-	if client.APIVersion > 0 {
-
-		endpoint = fmt.Sprintf("%s/v%d/settlement", client.BaseURL, client.APIVersion)
-
-	}
-
 	status, response := HTTPPost(ctx, endpoint, headers, settlementRequest)
 	if status > 299 || status < 200 {
 
@@ -435,8 +419,6 @@ func AdjustWalletProfile(tr trace.Tracer, ctx context.Context, client Client, ad
 	endpoint := fmt.Sprintf("%s/adjust", client.BaseURL)
 
 	if client.APIVersion > 0 {
-
-		endpoint = fmt.Sprintf("%s/v%d/adjust", client.BaseURL, client.APIVersion)
 
 		if decimalMultiplier.In64() != DecimalMultiplierTenOfThousands {
 
@@ -544,8 +526,6 @@ func BetRollback(tr trace.Tracer, ctx context.Context, client Client, rollback R
 	endpoint := fmt.Sprintf("%s/rollback", client.BaseURL)
 
 	if client.APIVersion > 0 {
-
-		endpoint = fmt.Sprintf("%s/v%d/rollback", client.BaseURL, client.APIVersion)
 
 		if decimalMultiplier.In64() != DecimalMultiplierTenOfThousands {
 
