@@ -125,7 +125,7 @@ func GetClient(tr trace.Tracer, ctx context.Context, db *sql.DB, clientID int64)
 	ctx, span := tr.Start(ctx, "GetClient")
 	defer span.End()
 
-	query := "SELECT base_url, authentication_header,authentication_string,api_version FROM clients WHERE account = ? "
+	query := "SELECT base_url, authentication_header,authentication_string FROM clients WHERE account = ? "
 	dbUtils := goutils.Db{DB: db, Context: ctx}
 	dbUtils.SetQuery(query)
 	dbUtils.SetParams(clientID)
