@@ -52,37 +52,14 @@ func CreateClient(tr trace.Tracer, ctx context.Context, db *sql.DB, client Clien
 		"authentication_header": client.AuthenticationHeader,
 		"authentication_string": client.AuthenticationString,
 		"base_url":              client.BaseURL,
-		"api_version":           client.APIVersion,
 	}
 
-	_, err := dbUtils.UpsertWithContext("clients", inserts, []string{"account", "authentication_header", "authentication_string", "base_url", "api_version"})
+	_, err := dbUtils.UpsertWithContext("clients", inserts, []string{"account", "authentication_header", "authentication_string", "base_url"})
 	if err != nil {
 
 		logrus.WithContext(ctx).
 			WithFields(logrus.Fields{
 				"description": "error creating  new client",
-				"data":        inserts,
-			}).
-			Error(err.Error())
-
-		return err
-
-	}
-
-	update := map[string]interface{}{
-		"api_version": client.APIVersion,
-	}
-
-	condition := map[string]interface{}{
-		"account": client.ID,
-	}
-
-	_, err = dbUtils.UpdateWithContext("clients", condition, update)
-	if err != nil {
-
-		logrus.WithContext(ctx).
-			WithFields(logrus.Fields{
-				"description": "error updating  client",
 				"data":        inserts,
 			}).
 			Error(err.Error())
@@ -149,28 +126,8 @@ func GetClient(tr trace.Tracer, ctx context.Context, db *sql.DB, clientID int64)
 		BaseURL:              base_url.String,
 		AuthenticationHeader: authenticationHeader.String,
 		AuthenticationString: authenticationString.String,
-		APIVersion:           1,
 	}
 
-	query = "SELECT api_version FROM clients WHERE account = ? "
-	dbUtils.SetQuery(query)
-	dbUtils.SetParams(clientID)
-
-	var apiVersion sql.NullInt64
-	err = dbUtils.FetchOneWithContext().Scan(&apiVersion)
-	if err != nil {
-
-		logrus.WithContext(ctx).
-			WithFields(logrus.Fields{
-				"description": "error retrieving client api version",
-			}).
-			Error(err.Error())
-
-		return client
-
-	}
-
-	client.APIVersion = apiVersion.Int64
 	return client
 
 }
