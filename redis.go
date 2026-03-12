@@ -3,6 +3,7 @@ package wallet
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"log"
 	"time"
@@ -10,30 +11,33 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+func getKey(key string) string {
+
+	if len(os.Getenv("REDIS_KEY_PREFIX")) > 0 {
+
+		return fmt.Sprintf("%s:%s", os.Getenv("REDIS_KEY_PREFIX"), key)
+	}
+
+	return key
+
+}
+
 func GetRedisKey(conn *redis.Client, key string, ctx context.Context) (string, error) {
 
-	//BOOKING:CODE
-
-	//AUTHORIZATION
-	//if strings.HasPrefix(key,"PROFILE:") || strings.HasPrefix(key,"BOOKING:") || strings.HasPrefix(key,"AUTHORIZATION:")  {
-
 	var data string
-	data, err := conn.Get(ctx, key).Result()
+	data, err := conn.Get(ctx, getKey(key)).Result()
 	if err != nil {
 
 		return data, fmt.Errorf("error getting key %s: %v", key, err)
 	}
 
 	return data, err
-	//}
-
-	//return "",errors.New("redis stopped")
 
 }
 
 func SetRedisKey(conn *redis.Client, key string, value string, ctx context.Context) error {
 
-	_, err := conn.Set(ctx, key, value, time.Second*time.Duration(0)).Result()
+	_, err := conn.Set(ctx, getKey(key), value, time.Second*time.Duration(0)).Result()
 	if err != nil {
 
 		v := string(value)
@@ -50,7 +54,7 @@ func SetRedisKey(conn *redis.Client, key string, value string, ctx context.Conte
 
 func SetRedisKeyWithExpiry(conn *redis.Client, key string, value string, seconds int, ctx context.Context) error {
 
-	_, err := conn.Set(ctx, key, value, time.Second*time.Duration(seconds)).Result()
+	_, err := conn.Set(ctx, getKey(key), value, time.Second*time.Duration(seconds)).Result()
 	if err != nil {
 
 		v := string(value)
@@ -70,7 +74,7 @@ func SetRedisKeyWithExpiry(conn *redis.Client, key string, value string, seconds
 func IncRedisKey(conn *redis.Client, key string, ctx context.Context) (int64, error) {
 
 	var data int64
-	data, err := conn.Incr(ctx, key).Result()
+	data, err := conn.Incr(ctx, getKey(key)).Result()
 
 	if err != nil {
 

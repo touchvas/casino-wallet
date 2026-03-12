@@ -47,35 +47,13 @@ func GetWalletProfile(tr trace.Tracer, ctx context.Context, client Client, profi
 	endpoint := fmt.Sprintf("%s/profile", client.BaseURL)
 
 	status, response := HTTPPost(ctx, endpoint, headers, profileRequest)
-
 	if status > 299 || status < 200 {
-
-		logrus.WithContext(ctx).
-			WithFields(logrus.Fields{
-				"description":      fmt.Sprintf("invalid status %d geting user ", status),
-				"endpoint":         endpoint,
-				"request":          profileRequest,
-				"response_status":  status,
-				"response_payload": response,
-			}).
-			Warn(response)
 
 		return nil, fmt.Errorf("%s", response)
 
-	} else {
-
-		logrus.WithContext(ctx).
-			WithFields(logrus.Fields{
-				"endpoint":         endpoint,
-				"request":          profileRequest,
-				"response_status":  status,
-				"response_payload": response,
-			}).
-			Info(response)
 	}
 
 	prof := new(WalletProfile)
-
 	err := json.Unmarshal([]byte(response), prof)
 	if err != nil {
 
@@ -91,7 +69,6 @@ func GetWalletProfile(tr trace.Tracer, ctx context.Context, client Client, profi
 	}
 
 	id := fmt.Sprintf("%d%s", client.ID, prof.ID)
-
 	prof.ID = id
 
 	return prof, nil
@@ -134,16 +111,6 @@ func DebitWalletProfile(tr trace.Tracer, ctx context.Context, client Client, deb
 	status, response := HTTPPost(ctx, endpoint, headers, debitRequest)
 	if status > 299 || status < 200 {
 
-		logrus.WithContext(ctx).
-			WithFields(logrus.Fields{
-				"description":      fmt.Sprintf("invalid status %d debiting user ", status),
-				"endpoint":         endpoint,
-				"request":          debitRequest,
-				"response_status":  status,
-				"response_payload": response,
-			}).
-			Warn(response)
-
 		if status == http.StatusPaymentRequired {
 
 			prof := new(DebitTransactionResponse)
@@ -163,20 +130,9 @@ func DebitWalletProfile(tr trace.Tracer, ctx context.Context, client Client, deb
 
 		return nil, fmt.Errorf("%s", response)
 
-	} else {
-
-		logrus.WithContext(ctx).
-			WithFields(logrus.Fields{
-				"endpoint":         endpoint,
-				"request":          debitRequest,
-				"response_status":  status,
-				"response_payload": response,
-			}).
-			Info(response)
 	}
 
 	prof := new(DebitTransactionResponse)
-
 	err := json.Unmarshal([]byte(response), prof)
 	if err != nil {
 
@@ -236,16 +192,6 @@ func CreditWalletProfile(tr trace.Tracer, ctx context.Context, client Client, cr
 
 	if status > 299 || status < 200 {
 
-		logrus.WithContext(ctx).
-			WithFields(logrus.Fields{
-				"description":      fmt.Sprintf("invalid status %d crediting user ", status),
-				"endpoint":         endpoint,
-				"request":          creditRequest,
-				"response_status":  status,
-				"response_payload": response,
-			}).
-			Warn(response)
-
 		if status == http.StatusConflict {
 
 			prof := new(CreditTransactionResponse)
@@ -256,20 +202,9 @@ func CreditWalletProfile(tr trace.Tracer, ctx context.Context, client Client, cr
 
 		return nil, fmt.Errorf("%s", response)
 
-	} else {
-
-		logrus.WithContext(ctx).
-			WithFields(logrus.Fields{
-				"endpoint":         endpoint,
-				"request":          creditRequest,
-				"response_status":  status,
-				"response_payload": response,
-			}).
-			Info(response)
 	}
 
 	prof := new(CreditTransactionResponse)
-
 	err := json.Unmarshal([]byte(response), prof)
 	if err != nil {
 
@@ -320,16 +255,6 @@ func BetSettlement(tr trace.Tracer, ctx context.Context, client Client, settleme
 	status, response := HTTPPost(ctx, endpoint, headers, settlementRequest)
 	if status > 299 || status < 200 {
 
-		logrus.WithContext(ctx).
-			WithFields(logrus.Fields{
-				"description":      fmt.Sprintf("invalid status %d on bet settlement ", status),
-				"endpoint":         endpoint,
-				"request":          settlementRequest,
-				"response_status":  status,
-				"response_payload": response,
-			}).
-			Warn(response)
-
 		return fmt.Errorf("%s", response)
 	}
 
@@ -373,16 +298,6 @@ func AdjustWalletProfile(tr trace.Tracer, ctx context.Context, client Client, ad
 
 	if status > 299 || status < 200 {
 
-		logrus.WithContext(ctx).
-			WithFields(logrus.Fields{
-				"description":      fmt.Sprintf("invalid status %d crediting user ", status),
-				"endpoint":         endpoint,
-				"request":          adjustmentRequest,
-				"response_status":  status,
-				"response_payload": response,
-			}).
-			Warn(response)
-
 		if status == http.StatusConflict {
 
 			prof := new(AdjustmentTransactionResponse)
@@ -393,16 +308,6 @@ func AdjustWalletProfile(tr trace.Tracer, ctx context.Context, client Client, ad
 
 		return nil, fmt.Errorf("%s", response)
 
-	} else {
-
-		logrus.WithContext(ctx).
-			WithFields(logrus.Fields{
-				"endpoint":         endpoint,
-				"request":          adjustmentRequest,
-				"response_status":  status,
-				"response_payload": response,
-			}).
-			Info(response)
 	}
 
 	prof := new(AdjustmentTransactionResponse)
@@ -461,16 +366,6 @@ func BetRollback(tr trace.Tracer, ctx context.Context, client Client, rollback R
 
 	if status > 299 || status < 200 {
 
-		logrus.WithContext(ctx).
-			WithFields(logrus.Fields{
-				"description":      fmt.Sprintf("invalid status %d on bet rollback ", status),
-				"endpoint":         endpoint,
-				"request":          rollbackRequest,
-				"response_status":  status,
-				"response_payload": response,
-			}).
-			Warn(response)
-
 		if status == http.StatusConflict {
 
 			prof := new(RollbackTransactionResponse)
@@ -481,16 +376,6 @@ func BetRollback(tr trace.Tracer, ctx context.Context, client Client, rollback R
 
 		return nil, fmt.Errorf("%s", response)
 
-	} else {
-
-		logrus.WithContext(ctx).
-			WithFields(logrus.Fields{
-				"endpoint":         endpoint,
-				"request":          rollbackRequest,
-				"response_status":  status,
-				"response_payload": response,
-			}).
-			Info(response)
 	}
 
 	prof := new(RollbackTransactionResponse)
@@ -582,6 +467,28 @@ func HTTPPost(ctx context.Context, url string, headers map[string]string, payloa
 		return st, ""
 	}
 
+	var responseLog interface{}
+
+	dt := new(map[string]interface{})
+	err = json.Unmarshal([]byte(response), dt)
+	if err == nil {
+
+		responseLog = *dt
+
+	} else {
+
+		responseLog = response
+	}
+
+	logrus.WithContext(ctx).
+		WithFields(logrus.Fields{
+			"endpoint":         url,
+			"request":          payload,
+			"response_status":  st,
+			"response_payload": responseLog,
+		}).
+		Info("api response")
+
 	return st, string(body)
 }
 
@@ -590,9 +497,6 @@ func NewNetClient() *http.Client {
 	once.Do(func() {
 
 		var netTransport = &http.Transport{
-			Dial: (&net.Dialer{
-				Timeout: 30 * time.Second,
-			}).Dial,
 			DialContext: (&net.Dialer{
 				Timeout: 30 * time.Second,
 			}).DialContext,
